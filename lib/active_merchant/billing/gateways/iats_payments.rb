@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class IatsPaymentsGateway < Gateway
       class_attribute :live_na_url, :live_uk_url
 
@@ -185,8 +185,13 @@ module ActiveMerchant #:nodoc:
       end
 
       def commit(action, parameters)
-        response = parse(ssl_post(url(action), post_data(action, parameters),
-          { 'Content-Type' => 'application/soap+xml; charset=utf-8' }))
+        response = parse(
+          ssl_post(
+            url(action),
+            post_data(action, parameters),
+            { 'Content-Type' => 'application/soap+xml; charset=utf-8' }
+          )
+        )
 
         Response.new(
           success_from(response),

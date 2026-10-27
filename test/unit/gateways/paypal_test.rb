@@ -260,21 +260,29 @@ class PaypalTest < Test::Unit::TestCase
   end
 
   def test_item_total_shipping_handling_and_tax_not_included_unless_all_are_present
-    xml = @gateway.send(:build_sale_or_authorization_request, 'Authorization', @amount, @credit_card,
+    xml = @gateway.send(
+      :build_sale_or_authorization_request,
+      'Authorization', @amount, @credit_card,
       tax: @amount,
       shipping: @amount,
-      handling: @amount)
+      handling: @amount
+    )
 
     doc = REXML::Document.new(xml)
     assert_nil REXML::XPath.first(doc, '//n2:PaymentDetails/n2:TaxTotal')
   end
 
   def test_item_total_shipping_handling_and_tax
-    xml = @gateway.send(:build_sale_or_authorization_request, 'Authorization', @amount, @credit_card,
+    xml = @gateway.send(
+      :build_sale_or_authorization_request,
+      'Authorization',
+      @amount,
+      @credit_card,
       tax: @amount,
       shipping: @amount,
       handling: @amount,
-      subtotal: 200)
+      subtotal: 200
+    )
 
     doc = REXML::Document.new(xml)
     assert_equal '1.00', REXML::XPath.first(doc, '//n2:PaymentDetails/n2:TaxTotal').text
@@ -286,7 +294,7 @@ class PaypalTest < Test::Unit::TestCase
       password: 'test',
       pem: 'PEM'
     )
-    assert_equal PaypalGateway::URLS[:test][:certificate], gateway.send(:endpoint_url)
+    assert_equal 'https://api.sandbox.paypal.com/2.0/', gateway.send(:endpoint_url)
   end
 
   def test_should_use_live_certificate_endpoint
@@ -297,7 +305,7 @@ class PaypalTest < Test::Unit::TestCase
     )
     gateway.expects(:test?).returns(false)
 
-    assert_equal PaypalGateway::URLS[:live][:certificate], gateway.send(:endpoint_url)
+    assert_equal 'https://api.paypal.com/2.0/', gateway.send(:endpoint_url)
   end
 
   def test_should_use_test_signature_endpoint
@@ -307,7 +315,7 @@ class PaypalTest < Test::Unit::TestCase
       signature: 'SIG'
     )
 
-    assert_equal PaypalGateway::URLS[:test][:signature], gateway.send(:endpoint_url)
+    assert_equal 'https://api-3t.sandbox.paypal.com/2.0/', gateway.send(:endpoint_url)
   end
 
   def test_should_use_live_signature_endpoint
@@ -318,7 +326,7 @@ class PaypalTest < Test::Unit::TestCase
     )
     gateway.expects(:test?).returns(false)
 
-    assert_equal PaypalGateway::URLS[:live][:signature], gateway.send(:endpoint_url)
+    assert_equal 'https://api-3t.paypal.com/2.0/', gateway.send(:endpoint_url)
   end
 
   def test_should_raise_argument_when_credentials_not_present
@@ -611,7 +619,7 @@ class PaypalTest < Test::Unit::TestCase
 
   def test_3ds_version_1_request
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, @options.merge(three_d_secure_option))
+      @gateway.purchase(@amount, @credit_card, @options.merge(three_d_secure_option(version: '1.0.2', xid: 'xid')))
     end.check_request do |_endpoint, data, _headers|
       assert_match %r{<n2:Version>124</n2:Version>}, data
       assert_match %r{<AuthStatus3ds>Y</AuthStatus3ds>}, data
@@ -619,6 +627,23 @@ class PaypalTest < Test::Unit::TestCase
       assert_match %r{<Eci3ds>eci</Eci3ds>}, data
       assert_match %r{<Xid>xid</Xid>}, data
     end.respond_with(successful_purchase_response)
+  end
+
+  def test_3ds_version_2_request
+    stub_comms do
+      @gateway.purchase(@amount, @credit_card, @options.merge(three_d_secure_option(version: '2.1.0', ds_transaction_id: 'ds_transaction_id')))
+    end.check_request do |_endpoint, data, _headers|
+      assert_match %r{<n2:Version>214.0</n2:Version>}, data
+      assert_match %r{<AuthStatus3ds>Y</AuthStatus3ds>}, data
+      assert_match %r{<Cavv>cavv</Cavv>}, data
+      assert_match %r{<Eci3ds>eci</Eci3ds>}, data
+      assert_match %r{<ThreeDSVersion>2.1.0</ThreeDSVersion>}, data
+      assert_match %r{<DSTransactionId>ds_transaction_id</DSTransactionId>}, data
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_api_version
+    assert_equal '2.0', @gateway.fetch_version
   end
 
   private
@@ -1291,7 +1316,7 @@ class PaypalTest < Test::Unit::TestCase
           </CreateRecurringPaymentsProfileResponseDetails>
         </CreateRecurringPaymentsProfileResponse>
         </SOAP-ENV:Body>
-      </SOAP-ENV:Envelope>"
+      </SOAP-ENV:Envelope>
     RESPONSE
   end
 
@@ -1427,13 +1452,15 @@ class PaypalTest < Test::Unit::TestCase
     RESPONSE
   end
 
-  def three_d_secure_option
+  def three_d_secure_option(version:, xid: nil, ds_transaction_id: nil)
     {
       three_d_secure: {
-        trans_status: 'Y',
+        authentication_response_status: 'Y',
         eci: 'eci',
         cavv: 'cavv',
-        xid: 'xid'
+        xid:,
+        ds_transaction_id:,
+        version:
       }
     }
   end

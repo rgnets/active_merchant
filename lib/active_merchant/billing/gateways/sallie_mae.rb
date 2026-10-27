@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class SallieMaeGateway < Gateway
       self.live_url = self.test_url = 'https://trans.salliemae.com/cgi-bin/process.cgi'
 
@@ -120,9 +120,13 @@ module ActiveMerchant #:nodoc:
         end
 
         response = parse(ssl_post(self.live_url, parameters.to_post_data) || '')
-        Response.new(successful?(response), message_from(response), response,
+        Response.new(
+          successful?(response),
+          message_from(response),
+          response,
           test: test?,
-          authorization: response['refcode'])
+          authorization: response['refcode']
+        )
       end
 
       def successful?(response)

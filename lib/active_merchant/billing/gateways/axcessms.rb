@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class AxcessmsGateway < Gateway
       self.test_url = 'https://test.ctpe.io/payment/ctpe'
       self.live_url = 'https://ctpe.io/payment/ctpe'
@@ -71,9 +71,13 @@ module ActiveMerchant #:nodoc:
         message = "#{response[:reason]} - #{response[:return]}"
         authorization = response[:unique_id]
 
-        Response.new(success, message, response,
-          authorization: authorization,
-          test: (response[:mode] != 'LIVE'))
+        Response.new(
+          success,
+          message,
+          response,
+          authorization:,
+          test: (response[:mode] != 'LIVE')
+        )
       end
 
       def parse(body)

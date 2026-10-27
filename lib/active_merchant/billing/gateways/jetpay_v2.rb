@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class JetpayV2Gateway < Gateway
       self.test_url = 'https://test1.jetpay.com/jetpay'
       self.live_url = 'https://gateway20.jetpay.com/jetpay'
@@ -12,7 +12,8 @@ module ActiveMerchant #:nodoc:
       self.homepage_url = 'http://www.jetpay.com'
       self.display_name = 'JetPay'
 
-      API_VERSION = '2.2'
+      # Define the API version using the Versionable module
+      version '2.2'
 
       ACTION_CODE_MESSAGES = {
         '000' =>  'Approved.',
@@ -203,7 +204,7 @@ module ActiveMerchant #:nodoc:
 
       def build_xml_request(transaction_type, options = {}, transaction_id = nil, &block)
         xml = Builder::XmlMarkup.new
-        xml.tag! 'JetPay', 'Version' => API_VERSION do
+        xml.tag! 'JetPay', 'Version' => fetch_version do # Use normalized version
           # Basic values needed for any request
           xml.tag! 'TerminalID', @options[:login]
           xml.tag! 'TransactionType', transaction_type
@@ -295,14 +296,16 @@ module ActiveMerchant #:nodoc:
         response = parse(ssl_post(url, request))
 
         success = success?(response)
-        Response.new(success,
+        Response.new(
+          success,
           success ? 'APPROVED' : message_from(response),
           response,
           test: test?,
           authorization: authorization_from(response, money, token),
           avs_result: AVSResult.new(code: response[:avs]),
           cvv_result: CVVResult.new(response[:cvv2]),
-          error_code: success ? nil : error_code_from(response))
+          error_code: success ? nil : error_code_from(response)
+        )
       end
 
       def url

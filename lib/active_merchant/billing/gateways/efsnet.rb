@@ -1,7 +1,7 @@
 require 'rexml/document'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class EfsnetGateway < Gateway
       self.supported_countries = ['US']
       self.supported_cardtypes = %i[visa master american_express discover]
@@ -83,8 +83,8 @@ module ActiveMerchant #:nodoc:
         {
           reference_number: format_reference_number(options[:order_id]),
           transaction_amount: amount(money),
-          original_transaction_amount: original_transaction_amount,
-          original_transaction_id: original_transaction_id,
+          original_transaction_amount:,
+          original_transaction_id:,
           client_ip_address: options[:ip]
         }
       end
@@ -145,11 +145,15 @@ module ActiveMerchant #:nodoc:
       def commit(action, parameters)
         response = parse(ssl_post(test? ? self.test_url : self.live_url, post_data(action, parameters), 'Content-Type' => 'text/xml'))
 
-        Response.new(success?(response), message_from(response[:result_message]), response,
+        Response.new(
+          success?(response),
+          message_from(response[:result_message]),
+          response,
           test: test?,
           authorization: authorization_from(response, parameters),
           avs_result: { code: response[:avs_response_code] },
-          cvv_result: response[:cvv_response_code])
+          cvv_result: response[:cvv_response_code]
+        )
       end
 
       def success?(response)
@@ -173,8 +177,9 @@ module ActiveMerchant #:nodoc:
       end
 
       def post_data(action, parameters = {})
-        xml   = REXML::Document.new("<?xml version='1.0' encoding='UTF-8'?>")
-        root  = xml.add_element('Request')
+        xml = REXML::Document.new
+        xml << REXML::XMLDecl.new('1.0', 'UTF-8')
+        root = xml.add_element('Request')
         root.attributes['StoreID'] = options[:login]
         root.attributes['StoreKey'] = options[:password]
         root.attributes['ApplicationID'] = 'ot 1.0'

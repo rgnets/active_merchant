@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     module BeanstreamCore
       include Empty
 
@@ -228,7 +228,7 @@ module ActiveMerchant #:nodoc:
 
         if billing_address = options[:billing_address] || options[:address]
           post[:ordName]          = billing_address[:name]
-          post[:ordPhoneNumber]   = billing_address[:phone]
+          post[:ordPhoneNumber]   = billing_address[:phone] || billing_address[:phone_number]
           post[:ordAddress1]      = billing_address[:address1]
           post[:ordAddress2]      = billing_address[:address2]
           post[:ordCity]          = billing_address[:city]
@@ -288,9 +288,9 @@ module ActiveMerchant #:nodoc:
           post[:trnExpYear] = format(credit_card.year, :two_digits)
           post[:trnCardCvd] = credit_card.verification_value
           if credit_card.is_a?(NetworkTokenizationCreditCard)
-            post[:"3DSecureXID"] = credit_card.transaction_id
-            post[:"3DSecureECI"] = credit_card.eci
-            post[:"3DSecureCAVV"] = credit_card.payment_cryptogram
+            post[:'3DSecureXID'] = credit_card.transaction_id
+            post[:'3DSecureECI'] = credit_card.eci
+            post[:'3DSecureCAVV'] = credit_card.payment_cryptogram
           end
         end
       end
@@ -413,11 +413,15 @@ module ActiveMerchant #:nodoc:
       def post(data, use_profile_api = nil)
         response = parse(ssl_post((use_profile_api ? SECURE_PROFILE_URL : self.live_url), data))
         response[:customer_vault_id] = response[:customerCode] if response[:customerCode]
-        build_response(success?(response), message_from(response), response,
+        build_response(
+          success?(response),
+          message_from(response),
+          response,
           test: test? || response[:authCode] == 'TEST',
           authorization: authorization_from(response),
           cvv_result: CVD_CODES[response[:cvdId]],
-          avs_result: { code: AVS_CODES.include?(response[:avsId]) ? AVS_CODES[response[:avsId]] : response[:avsId] })
+          avs_result: { code: AVS_CODES.include?(response[:avsId]) ? AVS_CODES[response[:avsId]] : response[:avsId] }
+        )
       end
 
       def recurring_post(data)

@@ -16,7 +16,49 @@ class IveriTest < Test::Unit::TestCase
     }
   end
 
+  def test_build_xml_envelope_uses_versionable
+    # Ensure the API version is used in the SOAP envelope
+    vxml = '<V_XML></V_XML>'
+    envelope = @gateway.send(:build_xml_envelope, vxml)
+
+    assert_match(/<protocolVersion>2.0<\/protocolVersion>/, envelope, 'build_xml_envelope should use Versionable for API version')
+  end
+
+  def test_build_vxml_request_uses_versionable
+    # Ensure the API version is used in the V_XML request
+    xml = @gateway.send(:build_vxml_request, 'Debit', {}) do |builder|
+      # Empty block for testing purposes
+    end
+    assert_match(/<V_XML Version="2.0"/, xml, 'build_vxml_request should use Versionable for API version')
+  end
+
+  def test_default_api_version
+    # Ensure the default API version is correctly set
+    assert_equal '2.0', @gateway.fetch_version(:default_api), 'Default API version should be 2.0'
+  end
+
+  def test_successful_purchase_uses_versionable
+    # Test with version 2.0
+    stub_comms do
+      @gateway.purchase(100, @credit_card, @options.merge(api_version: '2.0'))
+    end.check_request do |_endpoint, data, _headers|
+      # Match the full structure of the <request> element containing <V_XML>
+      assert_match %r{<request>&lt;V_XML Version="2.0" CertificateID="321" Direction="Request"&gt;}, data, 'Request should include the correct API version: 2.0'
+    end.respond_with(successful_purchase_response)
+  end
+
   def test_successful_purchase
+    @gateway.expects(:ssl_post).returns(successful_purchase_response)
+
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal '{F0568958-D10B-4093-A3BF-663168B06140}|{5CEF96FD-960E-4EA5-811F-D02CE6E36A96}|48b63446223ce91451fc3c1641a9ec03', response.authorization
+    assert response.test?
+  end
+
+  def test_successful_purchase_with_iveri_url
+    @gateway = IveriGateway.new(app_id: '123', cert_id: '321', url_override: 'iveri')
+
     @gateway.expects(:ssl_post).returns(successful_purchase_response)
 
     response = @gateway.purchase(@amount, @credit_card, @options)

@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class NetworkMerchantsGateway < Gateway
       self.live_url = self.test_url = 'https://secure.networkmerchants.com/api/transact.php'
 
@@ -200,11 +200,15 @@ module ActiveMerchant #:nodoc:
 
         authorization = authorization_from(success, parameters, raw)
 
-        Response.new(success, raw['responsetext'], raw,
+        Response.new(
+          success,
+          raw['responsetext'],
+          raw,
           test: test?,
-          authorization: authorization,
+          authorization:,
           avs_result: { code: raw['avsresponse'] },
-          cvv_result: raw['cvvresponse'])
+          cvv_result: raw['cvvresponse']
+        )
       end
 
       def build_request(action, parameters)

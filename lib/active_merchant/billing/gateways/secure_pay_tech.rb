@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class SecurePayTechGateway < Gateway
       class SecurePayTechPostData < PostData
         self.required_fields = %i[OrderReference CardNumber CardExpiry CardHolderName CardType MerchantID MerchantKey Amount Currency]
@@ -84,9 +84,13 @@ module ActiveMerchant #:nodoc:
       def commit(action, post)
         response = parse(ssl_post(self.live_url, post_data(action, post)))
 
-        Response.new(response[:result_code] == 1, message_from(response), response,
+        Response.new(
+          response[:result_code] == 1,
+          message_from(response),
+          response,
           test: test?,
-          authorization: response[:merchant_transaction_reference])
+          authorization: response[:merchant_transaction_reference]
+        )
       end
 
       def message_from(result)

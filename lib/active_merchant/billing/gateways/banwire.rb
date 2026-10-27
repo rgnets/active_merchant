@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class BanwireGateway < Gateway
       URL = 'https://banwire.com/api.pago_pro'
 
@@ -89,11 +89,13 @@ module ActiveMerchant #:nodoc:
           response = json_error(raw_response)
         end
 
-        Response.new(success?(response),
+        Response.new(
+          success?(response),
           response['message'],
           response,
           test: test?,
-          authorization: response['code_auth'])
+          authorization: response['code_auth']
+        )
       end
 
       def success?(response)

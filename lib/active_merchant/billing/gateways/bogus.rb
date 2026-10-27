@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # Bogus Gateway
     class BogusGateway < Gateway
       AUTHORIZATION = '53433'
@@ -88,6 +88,10 @@ module ActiveMerchant #:nodoc:
         else
           Response.new(true, SUCCESS_MESSAGE, { authorization: reference }, test: true)
         end
+      end
+
+      def verify(credit_card, options = {})
+        authorize(0, credit_card, options)
       end
 
       def store(paysource, options = {})

@@ -28,8 +28,7 @@ class GatewayTest < Test::Unit::TestCase
 
     assert_nothing_raised do
       Gateway.supported_countries = all_country_codes
-      assert Gateway.supported_countries == all_country_codes,
-        'List of supported countries not properly set'
+      assert Gateway.supported_countries == all_country_codes, 'List of supported countries not properly set'
     end
   end
 
@@ -148,7 +147,7 @@ class GatewayTest < Test::Unit::TestCase
     order_id = 'abc123'
 
     post = {}
-    options = { order_id: order_id, do_not_add: 24 }
+    options = { order_id:, do_not_add: 24 }
 
     @gateway.add_field_to_post_if_present(post, options, :order_id)
 
@@ -161,12 +160,28 @@ class GatewayTest < Test::Unit::TestCase
     transaction_number = 500
 
     post = {}
-    options = { order_id: order_id, transaction_number: transaction_number, do_not_add: 24 }
+    options = { order_id:, transaction_number:, do_not_add: 24 }
 
     @gateway.add_fields_to_post_if_present(post, options, %i[order_id transaction_number])
 
     assert_equal post[:order_id], order_id
     assert_equal post[:transaction_number], transaction_number
     assert_false post.key?(:do_not_add)
+  end
+
+  def test_format_name
+    input = 'Hello😊 World! :D'
+    expected_output = 'Hello World'
+    assert_equal expected_output, @gateway.send(:format_name, input)
+
+    input_with_accent = 'Café 😊'
+    expected_output_with_accent = 'Cafe'
+    assert_equal expected_output_with_accent, @gateway.send(:format_name, input_with_accent)
+  end
+
+  def test_format_name_with_nil_input
+    input = nil
+    expected_output = nil
+    assert_equal expected_output, @gateway.send(:format_name, input)
   end
 end

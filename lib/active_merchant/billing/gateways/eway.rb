@@ -1,7 +1,7 @@
 require 'rexml/document'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # Public: For more information on the Eway Gateway please visit their
     # {Developers Area}[http://www.eway.com.au/developers/api/direct-payments]
     class EwayGateway < Gateway
@@ -111,11 +111,13 @@ module ActiveMerchant #:nodoc:
         raw_response = ssl_post(url, post_data(parameters))
         response = parse(raw_response)
 
-        Response.new(success?(response),
+        Response.new(
+          success?(response),
           message_from(response[:ewaytrxnerror]),
           response,
           authorization: response[:ewaytrxnnumber],
-          test: test?)
+          test: test?
+        )
       end
 
       def success?(response)

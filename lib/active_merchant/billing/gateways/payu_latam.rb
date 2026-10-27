@@ -1,13 +1,15 @@
 require 'digest/md5'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class PayuLatamGateway < Gateway
+      version '4.0'
+
       self.display_name = 'PayU Latam'
       self.homepage_url = 'http://www.payulatam.com'
 
-      self.test_url = 'https://sandbox.api.payulatam.com/payments-api/4.0/service.cgi'
-      self.live_url = 'https://api.payulatam.com/payments-api/4.0/service.cgi'
+      self.test_url = "https://sandbox.api.payulatam.com/payments-api/#{fetch_version}/service.cgi"
+      self.live_url = "https://api.payulatam.com/payments-api/#{fetch_version}/service.cgi"
 
       self.supported_countries = %w[AR BR CL CO MX PA PE]
       self.default_currency = 'USD'
@@ -17,6 +19,7 @@ module ActiveMerchant #:nodoc:
       BRAND_MAP = {
         'visa' => 'VISA',
         'master' => 'MASTERCARD',
+        'maestro' => 'MASTERCARD',
         'american_express' => 'AMEX',
         'diners_club' => 'DINERS',
         'naranja' => 'NARANJA',
@@ -166,7 +169,7 @@ module ActiveMerchant #:nodoc:
         order[:accountId] = @options[:account_id]
         order[:partnerId] = options[:partner_id] if options[:partner_id]
         order[:referenceCode] = options[:order_id] || generate_unique_id
-        order[:description] = options[:description] || 'Compra en ' + @options[:merchant_id]
+        order[:description] = options[:description] || ('Compra en ' + @options[:merchant_id])
         order[:language] = options[:language] || 'en'
         order[:shippingAddress] = shipping_address_fields(options) if options[:shipping_address]
         post[:transaction][:order] = order
@@ -208,7 +211,7 @@ module ActiveMerchant #:nodoc:
           buyer[:merchantBuyerId] = buyer_hash[:merchant_buyer_id]
           buyer[:cnpj] = buyer_hash[:cnpj] if @options[:payment_country] == 'BR'
           buyer[:emailAddress] = buyer_hash[:email]
-          buyer[:contactPhone] = (options[:billing_address][:phone] if options[:billing_address]) || (options[:shipping_address][:phone] if options[:shipping_address]) || ''
+          buyer[:contactPhone] = (options[:billing_address][:phone] if options[:billing_address]) || (options[:shipping_address][:phone_number] if options[:shipping_address]) || ''
           buyer[:shippingAddress] = shipping_address_fields(options) if options[:shipping_address]
         else
           buyer[:fullName] = payment_method.name.strip
@@ -217,7 +220,7 @@ module ActiveMerchant #:nodoc:
           buyer[:merchantBuyerId] = options[:merchant_buyer_id]
           buyer[:cnpj] = options[:cnpj] if @options[:payment_country] == 'BR'
           buyer[:emailAddress] = options[:email]
-          buyer[:contactPhone] = (options[:billing_address][:phone] if options[:billing_address]) || (options[:shipping_address][:phone] if options[:shipping_address]) || ''
+          buyer[:contactPhone] = (options[:billing_address][:phone] if options[:billing_address]) || (options[:shipping_address][:phone_number] if options[:shipping_address]) || ''
           buyer[:shippingAddress] = shipping_address_fields(options) if options[:shipping_address]
         end
         post[:transaction][:order][:buyer] = buyer
@@ -233,7 +236,7 @@ module ActiveMerchant #:nodoc:
         shipping_address[:state] = address[:state]
         shipping_address[:country] = address[:country]
         shipping_address[:postalCode] = address[:zip]
-        shipping_address[:phone] = address[:phone]
+        shipping_address[:phone] = address[:phone_number]
         shipping_address
       end
 
@@ -278,6 +281,10 @@ module ActiveMerchant #:nodoc:
         Digest::MD5.hexdigest(signature_string)
       end
 
+      def codensa_bin?(number)
+        number.start_with?('590712')
+      end
+
       def add_payment_method(post, payment_method, options)
         if payment_method.is_a?(String)
           brand, token = split_authorization(payment_method)
@@ -295,7 +302,7 @@ module ActiveMerchant #:nodoc:
           credit_card[:name] = payment_method.name.strip
           credit_card[:processWithoutCvv2] = true if add_process_without_cvv2(payment_method, options)
           post[:transaction][:creditCard] = credit_card
-          post[:transaction][:paymentMethod] = BRAND_MAP[payment_method.brand.to_s]
+          post[:transaction][:paymentMethod] = codensa_bin?(payment_method.number) ? 'CODENSA' : BRAND_MAP[payment_method.brand.to_s]
         end
       end
 
@@ -308,6 +315,9 @@ module ActiveMerchant #:nodoc:
       def add_extra_parameters(post, options)
         extra_parameters = {}
         extra_parameters[:INSTALLMENTS_NUMBER] = options[:installments_number] || 1
+        extra_parameters[:EXTRA1] = options[:extra_1] if options[:extra_1]
+        extra_parameters[:EXTRA2] = options[:extra_2] if options[:extra_2]
+        extra_parameters[:EXTRA3] = options[:extra_3] if options[:extra_3]
         post[:transaction][:extraParameters] = extra_parameters
       end
 
@@ -387,26 +397,36 @@ module ActiveMerchant #:nodoc:
       def message_from(action, success, response)
         case action
         when 'store'
-          return response['code'] if success
-
-          error_description = response['creditCardToken']['errorDescription'] if response['creditCardToken']
-          response['error'] || error_description || 'FAILED'
+          message_from_store(success, response)
         when 'verify_credentials'
-          return 'VERIFIED' if success
-
-          'FAILED'
+          message_from_verify_credentials(success)
         else
-          if response['transactionResponse']
-            response_message = response['transactionResponse']['responseMessage']
-
-            response_code = response['transactionResponse']['responseCode'] || response['transactionResponse']['pendingReason']
-
-            response_message = response_code + ' | ' + response['transactionResponse']['paymentNetworkResponseErrorMessage'] unless response['transactionResponse']['paymentNetworkResponseErrorMessage'].nil?
-          end
-          return response_code if success
-
-          response_message || response['error'] || response_code || 'FAILED'
+          message_from_transaction_response(success, response)
         end
+      end
+
+      def message_from_store(success, response)
+        return response['code'] if success
+
+        error_description = response['creditCardToken']['errorDescription'] if response['creditCardToken']
+        response['error'] || error_description || 'FAILED'
+      end
+
+      def message_from_verify_credentials(success)
+        return 'VERIFIED' if success
+
+        'FAILED'
+      end
+
+      def message_from_transaction_response(success, response)
+        response_code = response.dig('transactionResponse', 'responseCode') || response.dig('transactionResponse', 'pendingReason')
+        return response_code if success
+        return response_code + ' | ' + response.dig('transactionResponse', 'paymentNetworkResponseErrorMessage') if response.dig('transactionResponse', 'paymentNetworkResponseErrorMessage')
+        return response.dig('transactionResponse', 'responseMessage') if response.dig('transactionResponse', 'responseMessage')
+        return response['error'] if response['error']
+        return response_code if response_code
+
+        'FAILED'
       end
 
       def authorization_from(action, response)
@@ -437,7 +457,7 @@ module ActiveMerchant #:nodoc:
         when 'verify_credentials'
           response['error'] || 'FAILED'
         else
-          response['transactionResponse']['errorCode'] || response['transactionResponse']['responseCode'] if response['transactionResponse']
+          response['transactionResponse']['paymentNetworkResponseCode'] || response['transactionResponse']['errorCode'] if response['transactionResponse']
         end
       end
 

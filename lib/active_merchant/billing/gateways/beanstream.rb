@@ -1,7 +1,7 @@
 require 'active_merchant/billing/gateways/beanstream/beanstream_core'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # This class implements the Canadian {Beanstream}[http://www.beanstream.com] payment gateway.
     # It is also named TD Canada Trust Online Mart payment gateway.
     # To learn more about the specification of Beanstream gateway, please read the OM_Direct_Interface_API.pdf,
@@ -76,6 +76,7 @@ module ActiveMerchant #:nodoc:
         add_transaction_type(post, :authorization)
         add_customer_ip(post, options)
         add_recurring_payment(post, options)
+        add_three_ds(post, options)
         commit(post)
       end
 
@@ -88,6 +89,7 @@ module ActiveMerchant #:nodoc:
         add_transaction_type(post, purchase_action(source))
         add_customer_ip(post, options)
         add_recurring_payment(post, options)
+        add_three_ds(post, options)
         commit(post)
       end
 
@@ -214,6 +216,22 @@ module ActiveMerchant #:nodoc:
 
       def build_response(*args)
         Response.new(*args)
+      end
+
+      def add_three_ds(post, options)
+        return unless three_d_secure = options[:three_d_secure]
+
+        post[:SecureXID] = (three_d_secure[:ds_transaction_id] || three_d_secure[:xid]) if three_d_secure.slice(:ds_transaction_id, :xid).values.any?
+        post[:SecureECI] = formatted_three_ds_eci(three_d_secure[:eci]) if three_d_secure[:eci].present?
+        post[:SecureCAVV] = three_d_secure[:cavv] if three_d_secure[:cavv].present?
+      end
+
+      def formatted_three_ds_eci(val)
+        case val
+        when '05', '02' then 5
+        when '06', '01' then 6
+        else val.to_i
+        end
       end
     end
   end

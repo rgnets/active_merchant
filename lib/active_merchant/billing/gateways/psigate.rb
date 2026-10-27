@@ -1,7 +1,7 @@
 require 'rexml/document'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # This class implements the Psigate gateway for the ActiveMerchant module.
     #
     # Modifications by Sean O'Hara ( sohara at sohara dot com )
@@ -102,11 +102,15 @@ module ActiveMerchant #:nodoc:
       def commit(money, creditcard, options = {})
         response = parse(ssl_post(url, post_data(money, creditcard, options)))
 
-        Response.new(successful?(response), message_from(response), response,
+        Response.new(
+          successful?(response),
+          message_from(response),
+          response,
           test: test?,
           authorization: build_authorization(response),
           avs_result: { code: response[:avsresult] },
-          cvv_result: response[:cardidresult])
+          cvv_result: response[:cardidresult]
+        )
       end
 
       def url

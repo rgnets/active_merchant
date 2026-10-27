@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class PayHubGateway < Gateway
       self.live_url = 'https://checkout.payhub.com/transaction/api'
 
@@ -182,14 +182,16 @@ module ActiveMerchant #:nodoc:
           response = json_error(raw_response)
         end
 
-        Response.new(success,
+        Response.new(
+          success,
           response_message(response),
           response,
           test: test?,
           avs_result: { code: response['AVS_RESULT_CODE'] },
           cvv_result: response['VERIFICATION_RESULT_CODE'],
           error_code: (success ? nil : STANDARD_ERROR_CODE_MAPPING[response['RESPONSE_CODE']]),
-          authorization: response['TRANSACTION_ID'])
+          authorization: response['TRANSACTION_ID']
+        )
       end
 
       def response_error(raw_response)
@@ -201,7 +203,7 @@ module ActiveMerchant #:nodoc:
       def json_error(raw_response)
         {
           error_message: 'Invalid response received from the Payhub API.  Please contact wecare@payhub.com if you continue to receive this message.' \
-            "  (The raw response returned by the API was #{raw_response.inspect})"
+                         "  (The raw response returned by the API was #{raw_response.inspect})"
         }
       end
 

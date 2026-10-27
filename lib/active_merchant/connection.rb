@@ -18,27 +18,13 @@ module ActiveMerchant
     RETRY_SAFE = false
     RUBY_184_POST_HEADERS = { 'Content-Type' => 'application/x-www-form-urlencoded' }
 
-    attr_accessor :endpoint
-    attr_accessor :open_timeout
-    attr_accessor :read_timeout
-    attr_accessor :verify_peer
-    attr_accessor :ssl_version
+    attr_accessor :endpoint, :open_timeout, :read_timeout, :verify_peer, :ssl_version, :ca_file, :ca_path, :pem, :pem_password, :logger, :tag, :ignore_http_status, :max_retries, :proxy_address, :proxy_port, :proxy_user, :proxy_password
+
     if Net::HTTP.instance_methods.include?(:min_version=)
       attr_accessor :min_version
       attr_accessor :max_version
     end
-    attr_reader :ssl_connection
-    attr_accessor :ca_file
-    attr_accessor :ca_path
-    attr_accessor :pem
-    attr_accessor :pem_password
-    attr_reader :wiredump_device
-    attr_accessor :logger
-    attr_accessor :tag
-    attr_accessor :ignore_http_status
-    attr_accessor :max_retries
-    attr_accessor :proxy_address
-    attr_accessor :proxy_port
+    attr_reader :ssl_connection, :wiredump_device
 
     def initialize(endpoint)
       @endpoint     = endpoint.is_a?(URI) ? endpoint : URI.parse(endpoint)
@@ -58,6 +44,8 @@ module ActiveMerchant
       @ssl_connection = {}
       @proxy_address = :ENV
       @proxy_port = nil
+      @proxy_user = nil
+      @proxy_password = nil
     end
 
     def wiredump_device=(device)
@@ -72,7 +60,7 @@ module ActiveMerchant
       headers = headers.dup
       headers['connection'] ||= 'close'
 
-      retry_exceptions(max_retries: max_retries, logger: logger, tag: tag) do
+      retry_exceptions(max_retries:, logger:, tag:) do
         info "connection_http_method=#{method.to_s.upcase} connection_uri=#{endpoint}", tag
 
         result = nil
@@ -85,12 +73,10 @@ module ActiveMerchant
           result =
             case method
             when :get
-              raise ArgumentError, 'GET requests do not support a request body' if body
-
               http.get(endpoint.request_uri, headers)
             when :post
               debug body
-              http.post(endpoint.request_uri, body, RUBY_184_POST_HEADERS.merge(headers))
+              http.post(endpoint.request_uri, body, headers.reverse_merge!(RUBY_184_POST_HEADERS))
             when :put
               debug body
               http.put(endpoint.request_uri, body, headers)
@@ -127,7 +113,7 @@ module ActiveMerchant
 
     def http
       @http ||= begin
-        http = Net::HTTP.new(endpoint.host, endpoint.port, proxy_address, proxy_port)
+        http = Net::HTTP.new(endpoint.host, endpoint.port, proxy_address, proxy_port, proxy_user, proxy_password)
         configure_debugging(http)
         configure_timeouts(http)
         configure_ssl(http)

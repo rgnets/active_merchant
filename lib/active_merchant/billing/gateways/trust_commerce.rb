@@ -4,8 +4,8 @@ rescue LoadError
   # Falls back to an SSL post to TrustCommerce
 end
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # TO USE:
     # First, make sure you have everything setup correctly and all of your dependencies in place with:
     #
@@ -248,6 +248,12 @@ module ActiveMerchant #:nodoc:
         commit(action, parameters)
       end
 
+      def verify(credit_card, options = {})
+        parameters = {}
+        add_creditcard(parameters, credit_card)
+        commit('verify', parameters)
+      end
+
       # recurring() a TrustCommerce account that is activated for Citadel, TrustCommerce's
       # hosted customer billing info database.
       #
@@ -282,7 +288,7 @@ module ActiveMerchant #:nodoc:
 
         parameters = {
           amount: amount(money),
-          cycle: cycle,
+          cycle:,
           verify: options[:verify] || 'y',
           billingid: options[:billingid] || nil,
           payments: options[:payments] || nil
@@ -331,7 +337,8 @@ module ActiveMerchant #:nodoc:
           gsub(%r((Authorization: Basic )\w+), '\1[FILTERED]').
           gsub(%r((&?cc=)\d*(&?)), '\1[FILTERED]\2').
           gsub(%r((&?password=)[^&]+(&?)), '\1[FILTERED]\2').
-          gsub(%r((&?cvv=)\d*(&?)), '\1[FILTERED]\2')
+          gsub(%r((&?cvv=)\d*(&?)), '\1[FILTERED]\2').
+          gsub(%r((&?account=)\d*(&?)), '\1[FILTERED]\2')
       end
 
       private
@@ -443,11 +450,15 @@ module ActiveMerchant #:nodoc:
         # to be considered successful, transaction status must be either "approved" or "accepted"
         success = SUCCESS_TYPES.include?(data['status'])
         message = message_from(data)
-        Response.new(success, message, data,
+        Response.new(
+          success,
+          message,
+          data,
           test: test?,
           authorization: authorization_from(action, data),
           cvv_result: data['cvv'],
-          avs_result: { code: data['avs'] })
+          avs_result: { code: data['avs'] }
+        )
       end
 
       def parse(body)
@@ -475,9 +486,14 @@ module ActiveMerchant #:nodoc:
       end
 
       def authorization_from(action, data)
-        authorization = data['transid']
-        authorization = "#{authorization}|#{action}" if authorization && VOIDABLE_ACTIONS.include?(action)
-        authorization
+        case action
+        when 'store'
+          data['billingid']
+        when *VOIDABLE_ACTIONS
+          "#{data['transid']}|#{action}"
+        else
+          data['transid']
+        end
       end
 
       def split_authorization(authorization)

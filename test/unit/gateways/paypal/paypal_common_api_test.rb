@@ -39,8 +39,8 @@ class PaypalCommonApiTest < Test::Unit::TestCase
     Builder::XmlMarkup.new
   end
 
-  def wrap_xml(&block)
-    REXML::Document.new(@gateway.send(:build_request_wrapper, 'Action', &block))
+  def wrap_xml(&)
+    REXML::Document.new(@gateway.send(:build_request_wrapper, 'Action', &))
   end
 
   def test_add_payment_details_adds_express_only_payment_details_when_necessary
@@ -190,10 +190,14 @@ class PaypalCommonApiTest < Test::Unit::TestCase
   end
 
   def test_build_reference_transaction_gets_ip
-    request = REXML::Document.new(@gateway.send(:build_reference_transaction_request,
-      100,
-      reference_id: 'id',
-      ip: '127.0.0.1'))
+    request = REXML::Document.new(
+      @gateway.send(
+        :build_reference_transaction_request,
+        100,
+        reference_id: 'id',
+        ip: '127.0.0.1'
+      )
+    )
     assert_equal '100', REXML::XPath.first(request, '//n2:PaymentDetails/n2:OrderTotal').text
     assert_equal 'id', REXML::XPath.first(request, '//DoReferenceTransactionReq/DoReferenceTransactionRequest/n2:DoReferenceTransactionRequestDetails/n2:ReferenceID').text
     assert_equal '127.0.0.1', REXML::XPath.first(request, '//DoReferenceTransactionReq/DoReferenceTransactionRequest/n2:DoReferenceTransactionRequestDetails/n2:IPAddress').text

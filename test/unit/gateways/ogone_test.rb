@@ -41,6 +41,10 @@ class OgoneTest < Test::Unit::TestCase
     Base.mode = :test
   end
 
+  def test_should_have_homepage_url
+    assert_equal 'https://www.ingenico.com/login/ogone/', OgoneGateway.homepage_url
+  end
+
   def test_successful_purchase
     @gateway.expects(:add_pair).at_least(1)
     @gateway.expects(:add_pair).with(anything, 'ECI', '7')
@@ -449,19 +453,40 @@ class OgoneTest < Test::Unit::TestCase
     assert_equal @gateway.scrub(pre_scrub), post_scrub
   end
 
+  def test_signatire_calculation_with_with_space
+    payload = {
+      orderID: 'abc123',
+      currency: 'EUR',
+      amount: '100',
+      PM: 'CreditCard',
+      ACCEPTANCE: 'test123',
+      STATUS: '9',
+      CARDNO: 'XXXXXXXXXXXX3310',
+      ED: '1029',
+      DCC_INDICATOR: '0',
+      DCC_EXCHRATE: ''
+    }
+
+    signature_with = @gateway.send(:calculate_signature, payload, 'sha512', 'ABC123')
+    payload.delete(:DCC_EXCHRATE)
+    signature_without = @gateway.send(:calculate_signature, payload, 'sha512', 'ABC123')
+
+    assert_equal signature_without, signature_with
+  end
+
   private
 
   def string_to_digest
     'ALIAS=2mynicesigAMOUNT=100mynicesigCARDNO=4111111111111111mynicesig'\
-    'CN=Client NamemynicesigCURRENCY=EURmynicesigOPERATION=RESmynicesig'\
-    'ORDERID=1mynicesigPSPID=MrPSPIDmynicesig'
+      'CN=Client NamemynicesigCURRENCY=EURmynicesigOPERATION=RESmynicesig'\
+      'ORDERID=1mynicesigPSPID=MrPSPIDmynicesig'
   end
 
   def d3d_string_to_digest
     'ALIAS=2mynicesigAMOUNT=100mynicesigCARDNO=4111111111111111mynicesig'\
-    'CN=Client NamemynicesigCURRENCY=EURmynicesigFLAG3D=Ymynicesig'\
-    'HTTP_ACCEPT=*/*mynicesigOPERATION=RESmynicesigORDERID=1mynicesig'\
-    'PSPID=MrPSPIDmynicesigWIN3DS=MAINWmynicesig'
+      'CN=Client NamemynicesigCURRENCY=EURmynicesigFLAG3D=Ymynicesig'\
+      'HTTP_ACCEPT=*/*mynicesigOPERATION=RESmynicesigORDERID=1mynicesig'\
+      'PSPID=MrPSPIDmynicesigWIN3DS=MAINWmynicesig'
   end
 
   def successful_authorize_response

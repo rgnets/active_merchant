@@ -1,7 +1,7 @@
 require 'json'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class SwipeCheckoutGateway < Gateway
       TRANSACTION_APPROVED_MSG = 'Transaction approved'
       TRANSACTION_DECLINED_MSG = 'Transaction declined'
@@ -104,12 +104,14 @@ module ActiveMerchant #:nodoc:
               result = response['data']['result']
               success = (result == 'accepted' || (test? && result == 'test-accepted'))
 
-              Response.new(success,
+              Response.new(
+                success,
                 success ?
                 TRANSACTION_APPROVED_MSG :
                 TRANSACTION_DECLINED_MSG,
                 response,
-                test: test?)
+                test: test?
+              )
             else
               build_error_response(message, response)
             end

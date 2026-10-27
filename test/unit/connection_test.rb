@@ -27,7 +27,7 @@ class ConnectionTest < Test::Unit::TestCase
 
   def test_connection_passes_env_proxy_by_default
     spy = Net::HTTP.new('example.com', 443)
-    Net::HTTP.expects(:new).with('example.com', 443, :ENV, nil).returns(spy)
+    Net::HTTP.expects(:new).with('example.com', 443, :ENV, nil, nil, nil).returns(spy)
     spy.expects(:start).returns(true)
     spy.expects(:get).with('/tx.php', { 'connection' => 'close' }).returns(@ok)
     @connection.request(:get, nil, {})
@@ -36,8 +36,10 @@ class ConnectionTest < Test::Unit::TestCase
   def test_connection_does_pass_requested_proxy
     @connection.proxy_address = 'proxy.example.com'
     @connection.proxy_port = 8080
+    @connection.proxy_user = 'user'
+    @connection.proxy_password = 'password'
     spy = Net::HTTP.new('example.com', 443)
-    Net::HTTP.expects(:new).with('example.com', 443, 'proxy.example.com', 8080).returns(spy)
+    Net::HTTP.expects(:new).with('example.com', 443, 'proxy.example.com', 8080, 'user', 'password').returns(spy)
     spy.expects(:start).returns(true)
     spy.expects(:get).with('/tx.php', { 'connection' => 'close' }).returns(@ok)
     @connection.request(:get, nil, {})
@@ -85,13 +87,6 @@ class ConnectionTest < Test::Unit::TestCase
     Net::HTTP.any_instance.expects(:start).returns(true)
     response = @connection.request(:delete, 'data', {})
     assert_equal 'success', response.body
-  end
-
-  def test_get_raises_argument_error_if_passed_data
-    assert_raises(ArgumentError) do
-      Net::HTTP.any_instance.expects(:start).returns(true)
-      @connection.request(:get, 'data', {})
-    end
   end
 
   def test_request_raises_when_request_method_not_supported
@@ -241,6 +236,22 @@ class ConnectionTest < Test::Unit::TestCase
     transcript = ''.freeze
     assert_raise ArgumentError, "can't wiredump to frozen object" do
       @connection.wiredump_device = transcript
+    end
+  end
+
+  def test_ca_file_excludes_distrusted_roots
+    distrusted_fingerprints = {
+      'emSign ECC Root CA - G3' => '86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b',
+      'emSign Root CA - C1' => '125609aa301da0a249b97a8239cb6a34216f44dcac9f3954b14292f2e8c8608f',
+      'emSign ECC Root CA - C3' => 'bc4d809b15189d78db3e1d8cf4f9726a795da1643ca5f1358e1ddb0edc0d7eb3',
+      'Comodo AAA Services root' => 'd7a7a0fb5d7e2731d771e9484ebcdef71d5f0c3e0a2948782bc83ee0ea699ef4'
+    }
+    bundled_fingerprints = OpenSSL::X509::Certificate.load_file(ActiveMerchant::Connection::CA_FILE).map do |cert|
+      OpenSSL::Digest::SHA256.hexdigest(cert.to_der)
+    end
+
+    distrusted_fingerprints.each do |name, fingerprint|
+      assert_not_includes bundled_fingerprints, fingerprint, "#{name} must not be in the bundled CA file"
     end
   end
 end

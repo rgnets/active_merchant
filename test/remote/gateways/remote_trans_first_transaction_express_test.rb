@@ -22,7 +22,7 @@ class RemoteTransFirstTransactionExpressTest < Test::Unit::TestCase
       order_id: generate_unique_id,
       company_name: 'Acme',
       title: 'QA Manager',
-      billing_address: billing_address,
+      billing_address:,
       shipping_address: billing_address,
       email: 'example@example.com',
       description: 'Store Purchase'
@@ -392,5 +392,13 @@ class RemoteTransFirstTransactionExpressTest < Test::Unit::TestCase
     assert_scrubbed(@credit_card.verification_value.to_s, clean_transcript)
     assert_scrubbed(@gateway.options[:gateway_id], clean_transcript)
     assert_scrubbed(@gateway.options[:reg_key], clean_transcript)
+  end
+
+  def test_transcript_scrubbing_account_number
+    transcript = capture_transcript(@gateway) do
+      @gateway.purchase(@amount, @check, @options)
+    end
+    clean_transcript = @gateway.scrub(transcript)
+    assert_scrubbed(@check.account_number, clean_transcript)
   end
 end

@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class QbmsGateway < Gateway
       API_VERSION = '4.0'
 
@@ -142,12 +142,16 @@ module ActiveMerchant #:nodoc:
         response = parse(type, data)
         message = (response[:status_message] || '').strip
 
-        Response.new(success?(response), message, response,
+        Response.new(
+          success?(response),
+          message,
+          response,
           test: test?,
           authorization: response[:credit_card_trans_id],
           fraud_review: fraud_review?(response),
           avs_result: { code: avs_result(response) },
-          cvv_result: cvv_result(response))
+          cvv_result: cvv_result(response)
+        )
       end
 
       def success?(response)
@@ -166,7 +170,7 @@ module ActiveMerchant #:nodoc:
 
         if status_code != 0
           return {
-            status_code: status_code,
+            status_code:,
             status_message: signon.attributes['statusMessage']
           }
         end

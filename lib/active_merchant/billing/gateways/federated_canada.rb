@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class FederatedCanadaGateway < Gateway
       # Same URL for both test and live, testing is done by using the test username (demo) and password (password).
       self.live_url = self.test_url = 'https://secure.federatedgateway.com/api/transact.php'
@@ -121,11 +121,15 @@ module ActiveMerchant #:nodoc:
         response = parse(data)
         message = message_from(response)
 
-        Response.new(success?(response), message, response,
+        Response.new(
+          success?(response),
+          message,
+          response,
           test: test?,
           authorization: response['transactionid'],
           avs_result: { code: response['avsresponse'] },
-          cvv_result: response['cvvresponse'])
+          cvv_result: response['cvvresponse']
+        )
       end
 
       def success?(response)

@@ -1,12 +1,14 @@
 require 'json'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class ForteGateway < Gateway
       include Empty
 
-      self.test_url = 'https://sandbox.forte.net/api/v2'
-      self.live_url = 'https://api.forte.net/v2'
+      version 'v2'
+
+      self.test_url = "https://sandbox.forte.net/api/#{fetch_version}"
+      self.live_url = "https://api.forte.net/#{fetch_version}"
 
       self.supported_countries = ['US']
       self.default_currency = 'USD'
@@ -28,6 +30,7 @@ module ActiveMerchant #:nodoc:
         add_payment_method(post, payment_method, options)
         add_billing_address(post, payment_method, options)
         add_shipping_address(post, options)
+        add_xdata(post, options)
         post[:action] = 'sale'
 
         commit(:post, post)
@@ -41,6 +44,7 @@ module ActiveMerchant #:nodoc:
         add_payment_method(post, payment_method, options)
         add_billing_address(post, payment_method, options)
         add_shipping_address(post, options)
+        add_xdata(post, options)
         post[:action] = 'authorize'
 
         commit(:post, post)
@@ -120,6 +124,16 @@ module ActiveMerchant #:nodoc:
 
       def add_service_fee(post, options)
         post[:service_fee_amount] = options[:service_fee_amount] if options[:service_fee_amount]
+      end
+
+      def add_xdata(post, options)
+        post[:xdata] = {}
+        if xdata = options[:xdata]
+          (1..9).each do |n|
+            field = "xdata_#{n}".to_sym
+            post[:xdata][field] = xdata[field] if xdata[field]
+          end
+        end
       end
 
       def add_billing_address(post, payment, options)

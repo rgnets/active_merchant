@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class GarantiGateway < Gateway
       self.live_url = 'https://sanalposprov.garanti.com.tr/VPServlet'
       self.test_url = 'https://sanalposprovtest.garanti.com.tr/VPServlet'
@@ -219,11 +219,13 @@ module ActiveMerchant #:nodoc:
 
         success = success?(response)
 
-        Response.new(success,
+        Response.new(
+          success,
           success ? 'Approved' : "Declined (Reason: #{response[:reason_code]} - #{response[:error_msg]} - #{response[:sys_err_msg]})",
           response,
           test: test?,
-          authorization: response[:order_id])
+          authorization: response[:order_id]
+        )
       end
 
       def parse(body)

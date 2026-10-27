@@ -1,7 +1,7 @@
 require 'base64'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class WirecardGateway < Gateway
       self.test_url = 'https://c3-test.wirecard.com/secure/ssl-gateway'
       self.live_url = 'https://c3.wirecard.com/secure/ssl-gateway'
@@ -179,11 +179,15 @@ module ActiveMerchant #:nodoc:
         message = response[:Message]
         authorization = response[:GuWID]
 
-        Response.new(success, message, response,
+        Response.new(
+          success,
+          message,
+          response,
           test: test?,
-          authorization: authorization,
+          authorization:,
           avs_result: { code: avs_code(response, options) },
-          cvv_result: response[:CVCResponseCode])
+          cvv_result: response[:CVCResponseCode]
+        )
       rescue ResponseError => e
         if e.response.code == '401'
           return Response.new(false, 'Invalid Login')
@@ -405,7 +409,7 @@ module ActiveMerchant #:nodoc:
         'N' => 'I', # CSC Match
         'U' => 'U', # Data Not Checked
         'Y' => 'D', # All Data Matched
-        'Z' => 'P', # CSC and Postcode Matched
+        'Z' => 'P' # CSC and Postcode Matched
       }
 
       # Amex have different AVS response codes to visa etc

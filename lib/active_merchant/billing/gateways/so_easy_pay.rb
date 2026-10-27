@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class SoEasyPayGateway < Gateway
       self.live_url = self.test_url = 'https://secure.soeasypay.com/gateway.asmx'
       self.money_format = :cents
@@ -161,11 +161,13 @@ module ActiveMerchant #:nodoc:
                    'Content-Type' => 'text/xml; charset=utf-8' }
         response_string = ssl_post(test? ? self.test_url : self.live_url, soap, headers)
         response = parse(response_string, soap_action)
-        return Response.new(response['errorcode'] == '000',
+        return Response.new(
+          response['errorcode'] == '000',
           response['errormessage'],
           response,
           test: test?,
-          authorization: response['transaction_id'])
+          authorization: response['transaction_id']
+        )
       end
 
       def build_soap(request)

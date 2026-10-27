@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class Flo2cashGateway < Gateway
       self.display_name = 'Flo2Cash'
       self.homepage_url = 'http://www.flo2cash.co.nz/'
@@ -160,6 +160,8 @@ module ActiveMerchant #:nodoc:
 
       def parse(body, action)
         response = {}
+        return response if body.blank?
+
         xml = REXML::Document.new(body)
         root = (REXML::XPath.first(xml, "//#{action}Response") || REXML::XPath.first(xml, '//detail'))
 

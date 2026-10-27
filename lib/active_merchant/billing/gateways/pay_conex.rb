@@ -1,10 +1,12 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class PayConexGateway < Gateway
       include Empty
 
-      self.test_url = 'https://cert.payconex.net/api/qsapi/3.8/'
-      self.live_url = 'https://secure.payconex.net/api/qsapi/3.8/'
+      version '3.8'
+
+      self.test_url = "https://cert.payconex.net/api/qsapi/#{fetch_version}/"
+      self.live_url = "https://secure.payconex.net/api/qsapi/#{fetch_version}/"
 
       self.supported_countries = %w(US CA)
       self.default_currency = 'USD'
@@ -79,7 +81,9 @@ module ActiveMerchant #:nodoc:
         force_utf8(transcript).
           gsub(%r((api_accesskey=)\w+), '\1[FILTERED]').
           gsub(%r((card_number=)\w+), '\1[FILTERED]').
-          gsub(%r((card_verification=)\w+), '\1[FILTERED]')
+          gsub(%r((card_verification=)\w+), '\1[FILTERED]').
+          gsub(%r((bank_account_number=)\w+), '\1[FILTERED]').
+          gsub(%r((bank_routing_number=)\w+), '\1[FILTERED]')
       end
 
       private

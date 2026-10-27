@@ -1,7 +1,7 @@
 require 'nokogiri'
 
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     class IxopayGateway < Gateway
       self.test_url = 'https://secure.ixopay.com/transaction'
       self.live_url = 'https://secure.ixopay.com/transaction'
@@ -286,8 +286,8 @@ module ActiveMerchant #:nodoc:
         response =
           begin
             parse(ssl_post(url, request, headers(request)))
-          rescue StandardError => error
-            parse(error.response.body)
+          rescue StandardError => e
+            parse(e.response.body)
           end
 
         Response.new(

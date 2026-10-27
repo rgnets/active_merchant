@@ -1,5 +1,5 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # ActiveMerchant Implementation for Quantum Gateway XML Requester Service
     # Based on API Doc from 8/6/2009
     #
@@ -215,11 +215,15 @@ module ActiveMerchant #:nodoc:
           authorization = success ? authorization_for(response) : nil
         end
 
-        Response.new(success, message, response,
+        Response.new(
+          success,
+          message,
+          response,
           test: test?,
-          authorization: authorization,
+          authorization:,
           avs_result: { code: response[:AVSResponseCode] },
-          cvv_result: response[:CVV2ResponseCode])
+          cvv_result: response[:CVV2ResponseCode]
+        )
       end
 
       # Parse the SOAP response
