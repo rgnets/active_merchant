@@ -551,7 +551,7 @@ module ActiveMerchant # :nodoc:
         add_purchase_data(xml, options[:setup_fee] || 0, true, options)
 
         # add token or cc
-        if is_jwt_transient_token?(payment_method)
+        if jwt_transient_token?(payment_method)
           # flag to prevent the add_subscription method from adding extraneous
           # fields that prevent the store from succeeding when using a token
           options[:storing] = true
@@ -756,7 +756,7 @@ module ActiveMerchant # :nodoc:
         end
       end
 
-      def is_jwt_transient_token?(payment_method)
+      def jwt_transient_token?(payment_method)
         payment_method.is_a?(String) && payment_method.length >= 64
       end
 
@@ -1117,8 +1117,8 @@ module ActiveMerchant # :nodoc:
             xml.tag! 'subscriptionID', subscription_id || reference
           end
 
-          xml.tag! 'frequency',           options[:subscription][:frequency]                      if options[:subscription][:frequency]
-          unless (options.delete(:storing))
+          xml.tag! 'frequency', options[:subscription][:frequency] if options[:subscription][:frequency]
+          unless options.delete(:storing)
             xml.tag! 'status',            options[:subscription][:status] if options[:subscription][:status]
             xml.tag! 'amount',            localized_amount(options[:subscription][:amount].to_i, options[:currency] || default_currency) if options[:subscription][:amount]
             xml.tag! 'numberOfPayments',  options[:subscription][:occurrences]                    if options[:subscription][:occurrences]
@@ -1129,7 +1129,6 @@ module ActiveMerchant # :nodoc:
             xml.tag! 'event',             options[:subscription][:event]                          if options[:subscription][:event]
             xml.tag! 'billPayment',       options[:subscription][:bill_payment]                   if options[:subscription][:bill_payment]
           end
-
         end
       end
 
@@ -1146,7 +1145,7 @@ module ActiveMerchant # :nodoc:
       end
 
       def add_payment_method_or_subscription(xml, money, payment_method_or_reference, options)
-        if is_jwt_transient_token?(payment_method_or_reference)
+        if jwt_transient_token?(payment_method_or_reference)
           add_address(xml, payment_method_or_reference, options[:billing_address], options)
           add_address(xml, payment_method_or_reference, options[:shipping_address], options, true)
           add_purchase_data(xml, money, true, options)
